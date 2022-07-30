@@ -22,76 +22,116 @@
 %\tableofcontents
 
 \section{Introduction}
-As prime numbers have fascinated mathematicians for centuries counting them arises as a natural question.
-For the longest time the only known way to find the number of primes smaller than $x \in \N$ $\pi(x)$ 
+Prime numbers have fascinated mathematicians for centuries and counting them arises as a natural question.
+For the longest time the only known way to find the number of primes smaller than $x \in \N$ denoted by $\pi(x)$ 
 was to calculate all primes up to $x$ and count them.
-For this the fastest method was the sieve of Eratosthenes\footnote{Actually this
+For this the fastest known method was the sieve of Eratosthenes\footnote{Actually this
 method was known already long before Eratosthenes, he only added the name  "sieve" to it in the 3rd century}
-which will be described in section 1 and has a runtime of $O(x \log \log x)$.
+which will be described in section \ref{sec:eratosthenes} and has a runtime of $O(x \log \log x)$.
 
-At the beginning of the 19th century Legendre discovered the first way to count primes without having to calculate them all.
-His method will be described in section 2 and still had the downside of needing to calculate many non-zero terms
+At the beginning of the 19th century Legendre discovered the first method to count primes without having to list them all.
+His method will be described in section \ref{sec:legendre}. However his method still had the downside of needing to calculate many additional terms
 making it unpractical.
 
-The first efficient algorithm was described by the astronomer E.D.F. Meissler at the end of the 19th century.
-The importance was that his method made the space used economical through reducing the terms in the sum.
-Through his method Meissler managed to calculate $\pi(10^{8}$ correctly and $\pi(10^{9})$ with an error of $56$.
+The first efficient algorithm was described by the astronomer E. D. F. Meissler at the end of the 19th century.
+His method made the space used economical through drastically reducing the number of terms that needed calculating.
+Through his method Meissler managed to calculate $\pi(10^{8})$ correctly and $\pi(10^{9})$ with an error of $56$.
 Subsequently many suggested improvements to Meissler's method although none carried out the calculations.
 
-At the middle of the $20$th century with the rise of digital computers D.H. Lehmer picked up Meissler's
-Method and extended and simplified it. He implemented it on an IBM 701 and managed to calculate  $\pi(10^{10})$ (with and error of $1$)
-Subsequently we will present his method and some improvements made by \ldots
+At the middle of the $20$th century with the rise of digital computers D. H. Lehmer extened Meissler's
+Method and simplified it. He implemented it on an IBM 701 and managed to calculate  $\pi(10^{10})$ (with and error of $1$).
+His method was further drastically improved by Lagarias, Miller and Odklyzko and further improvements to this method were made 
+by Deléglise, Rivat and Gourdon. Lehmer's original idea and the further improvements will be described in section \ref{sec:meissel-lehmer}.
+
+Gourdon's final method is to this day the best known way to calculate $\pi(x)$.
+The leading implementation is the program "primecount" from Kim Walish and David Bough.
+All recent advancements in calculating $\pi(10^{k})$ have been made with this implementation
+and the current record sits at $10^{29}$ giving a value for $\pi$ of $1520698109714272166094258063$. 
+
+Before we can discuss all these different methods however we have to introduce a framework to analyse their algorithmic complexity.
 
 \subsection{Asymptotic runtime analysis and the RAM}
-In order to do asymptotic runtime analysis we need to decide on a computational model to use.
-The classical model of a touring machine (TM) is not practical in our analysis as the time for a random read or write i.e.
+\todo[inline]{time complexity/space asymptotic runtime what is what}
+In order to analyse the asymptotic runtime of an algorithm we need to decide on a computational model on which the algorithm runs.
+The classical model of a Turing machine (TM) is not practical in our analysis as the time for a random read or write i.e.
 retrieving or writing values at random places on the tape scales with the total space used.
 That is the read/write head has to be moved from the current position to the position where the desired value should be read from/written to and back.
 Thus we consider the model of a \emph{random access machine}, short RAM.
-The difference to a touring machine is that a RAM does not have a sequential tape but uses
+The difference to a Turing machine is that a RAM does not have a sequential tape but uses
 an unlimited amount of registers which can be addressed by integers. Moreover computations with these addresses are allowed.
 With this every memory location can be accessed in constant time. This model also fits better the modern day computers
 whose memory supports near constant read and write times.
 
-In our discussions the need for a RAM arises in the sieving procedures. As these only work efficiently with random
-read and write access.
+In our discussions the need for a RAM arises in the sieving procedures. As these cannot be implemented
+efficiently on a Turing machine or even on a multitape Turing machine.
 
-\todo{describe big o-notation}
+As is custom in analysing the asymptotic runtime we are not interested in the exact
+number of operations but just in their order. Therefore we use the big O-notation
+which determines the runtime up to a constant factor and is defined as follows:
+\begin{definition}
+	Let $f$ and $g$ be two functions.
+	\begin{enumerate}
+		\item We say $f = O(g)$ if and only if
+			\[
+				\exists M > 0, c > 0 \qq{such that} \abs{f(s)} \leq c \cdot  \abs{g(s)} \forall s \geq M
+			.\] 
+		\item Moreover we write $f = \Omega(g)$ if and only if $g = O(f)$. 
+		\item If $f = O(g)$ and $g = O(f)$ then we write $f = \Theta(g)$.
+	\end{enumerate}
+\end{definition}
+With this defined let $n$ be the input size of an algorithm.
+Then we can describe its algorithmic complexity depending on $n$. 
+That is we can say the algorithm runs in time $O(n)$ if for an input of size $n$ it needs
+$c \cdot n$ many operations to terminate for a constant $c$.
+The same can also be said about the space complexity i.e. the amount of memory the algorithm uses at any time during its computation.
 
-\subsection{The sieve of Eratosthenes}\footnote{From grad texts in Maths C1 67}
-The sieve of Eratosthenes was first described in the work of Nicomedes (280-210 BC) entitled Introduction to Arithmetic and is probably 
-the best known method of finding primes.
 
-It is based on the following observation. Let $n \in \N$ be a composite number. Then there exists $d, d' \in {1,\ldots,n}$ with $d \leq d'$ such that 
-$d \cdot d' = n$. If $d > \sqrt{n}$. Then
+\section{The sieve of Eratosthenes}
+\label{sec:eratosthenes}
+The sieve of Eratosthenes was first described in the work of Nicomedes (280-210 BC) entitled "Introduction to Arithmetic" and is probably 
+the best known method of finding primes. In this section we follow the exposition from Nathanson in \cite{nathanson00}.
+
+It is based on the following observation: Let $n \in \N$ be a composite number. Then there exists $d, d' \in {1,\ldots,n}$ with $d \leq d'$ such that 
+$d \cdot d' = n$. Notice that if $d > \sqrt{n}$. Then
 \[
-n = d \cdot  d' > \sqrt{n} \cdot \sqrt{n} = n \contra
-.\] 
+n = d \cdot  d' > \sqrt{n} \cdot \sqrt{n} = n
+\] 
+which leads to a contradiction.
 Thus every composite number has a divisor $d \leq \sqrt{n}$ and in particular every composite number is divisible by a prime $p \leq \sqrt{n}$.
 
 To now find all primes up to $x$ we have the following algorithm:
 
-\begin{itemize}
+\begin{enumerate}
 	\item Write down all numbers from $1$ to $x$.
 	\item Cross out $1$.
-	\item Let $d$ be the smallest number on the list whose multiples have not already been eliminated.
-		 \begin{enumerate}
+	\item Let $d$ be the smallest number on the list whose multiples have not been eliminated already.
+		 \begin{itemize}
 			\item If $d > \sqrt{x}$ stop.
-			\item Else cross out all multiples of $d$ greater equal $d$ and repeat step 3.
-		\end{enumerate}
-\end{itemize}
-\todo{Also works with starting at $d^2$. also counts number of different prime factors a number has}
+			\item Else cross out all multiples of $d \geq d^2$ and repeat step 3.
+		\end{itemize}
+\end{enumerate}
 The remaining non crossed out numbers are then the prime numbers up to  $x$.
+Notice that it is enough to cross out all multiples $\geq d^2$ as all lower multiples have already been crossed out by
+a prior iteration.
+
+\begin{remark}
+	If we start crossing out all multiples greater equal $d$ however and keep track of how often a number has been crossed out,
+	then we can also get the number of distinct prime factors every number has, which is useful when 
+	computing the Möbius function.
+\end{remark}
 
  \begin{eg}
 	An example of this process can be seen in the figure below.
+	\todo[inline]{or maybe skip this}
 \end{eg}
 
-Trivially the procedure ends after maximally $\sqrt{x}$ steps and thus is in $O(\sqrt{x})$.
+\begin{remark}
 Importantly the only arithmetic operation needed is addition.
 Hence in reality the sieve is quicker than some other methods which have a better
-runtime however use multiplication too which has a bit wise complexity of $n^{\log_{2} 3}$ and thus can be slower.
+runtime however use multiplication too which at this time has a bit wise complexity of at least $n \log(n)$ (see \cite{harvey21}) and thus can be slower.
+\end{remark}
 
+Trivially the procedure ends after maximally $x \sqrt{x}$ steps and thus is in $O(x\sqrt{x})$.
 The runtime bound on the sieve of Eratosthenes can be improved as follows:
 We assume that crossing out a number can be done in $O(1)$.
 
@@ -104,7 +144,7 @@ the biggest prime $\leq \sqrt{x} $ then the loop is executed
 times.
 
 Using the fact proved by Euler that the reciprocal sum of primes grows with $O(\log \log x)$ and 
-writing down of the primes can be done in time $O(x)$ we get the following theorem
+noticing that writing the numbers $1$ to $x$ can be done in time $O(x)$ we get the following theorem:
  \begin{theorem}
 	Finding all primes up to $x$ can be done in time
 	\[
@@ -119,24 +159,102 @@ $\log(x) \in O(x^{\epsilon})$ for $\epsilon > 0$ which follows directly from l'H
 .\] 
 Thus sieving can be done in time $O(x^{1+\epsilon})$.
 
-More recently sieving algorithms have been found which run in sublinear time. More precisely Paul Pitchard found a sieving algorithm in [] with arithmetic complexity of
-$\Theta(\frac{n}{\log\log n}$.
+More recently sieving algorithms have been found which run in sublinear time. More precisely Paul Pitchard found a sieving algorithm in \cite{pitchard81} with arithmetic complexity of
+$\Theta(\frac{n}{\log\log n})$.
 
-\subsection{Legendre's Method}
+\section{Legendre's Method}
+\label{sec:legendre}
 In 1808, A.M. Legendre expanded on Eratosthenes sieve and gave a more analytic method which we will now describe.
 
+The idea is to calculate the number of primes less than $x$ by using the primes less than $\sqrt{x}$.
+Let us denote by $X$ the set of integers $1$ to $\left\lfloor x \right\rfloor$.
+and let $p_1,p_2,\ldots$ be the primes $\leq \left\lfloor \sqrt{x}  \right\rfloor$.
+Then let $C_{i}$ be the set of multiples of $p_{i}$ $\leq x$.
+Then the sets $C_{i}$ overlap where the intersection of $k$ sets are exactly the numbers that have
+these $k$ primes as prime factors.
+The idea is now that the primes between $\sqrt{x}$ and $x$ are exactly the numbers not belonging to any of the $C_{i}$.
 
-Then we have the following fact:
-\begin{fact}
-	$\phi(x,a) = \pi(x) - \pi(a) +1$
-\end{fact}
+We denote the cardinality of these intersections as follows
+\[
+	N(i_1,i_2,\ldots,i_{k}) = \abs{(C_{i_1} \cap C_{i_2} \cap \ldots \cap C_{i_{k}}}
+.\] 
+The value of $N$ is now precisely the number of elements of $X$ divisible by the product $p_{i_1} p_{i_2} \ldots p_{i_{k}}$ 
+as the $p_{i}$ are distinct primes. We therefore have
+\[
+	N(i_1,i_2,\ldots,i_{k}) = \left\lfloor \frac{x}{p_{i_1} p_{i_2} \ldots p_{i_{k}}} \right\rfloor
+.\] 
+Let us now denote for $k\geq 1$ by $S_{k}$ the sum $\sum N(i_1,\ldots,i_{k}) $ where the summation is over all tuples  $i_1 < i_2 < \ldots <i_{k}$
+for which the corresponding primes are $\geq 2$ and $\leq \left\lfloor \sqrt{x}  \right\rfloor$
+Moreover define $S_0 = \abs{X}$.
 
-This follows as $\phi$ 
+Notice that $N$ will be zero whenever the product in the denominator exceeds $x$ i.e.
+whenever the product of the first $k$ primes exceeds $x$.
+Thus all but finitely many $N$ are zero. We denote the largest value of $k$ for which $N$ does not vanish by $K$.
+
+The key observation is now the following proposition:
+\begin{proposition}[Principle of inclusion-exclusion]
+	The number of elements of $X$ which do not lie in any of the $C_{i}$ is
+	\[
+		S_0 - S_1 + S_2 - \ldots + (-1)^{K} S_{K}
+	.\] 
+\end{proposition}
+
+\begin{proof}
+	Let $z \in \N$ be such that $z$ is contained in $n$ sets $C_{i}$.
+	Then $z$ is counted once in $S_0$ and $n$ times in $S_1$ once for every $C_{i}$.
+	In $S_2$ it is counted every time two of the $C_{i}$ which contain $z$ are chosen giving a total of $\binom{n}{2}$.
+	In  $S_3$ it is similarly counted $\binom{n}{3}$ times and so on. Thus in the total alternating sum of the $S_{i}$ 
+	$z$ occurs
+	 \[
+		 1 - \binom{n}{1} + \binom{n}{2} - \ldots + (-1)^{n} \binom{n}{n} = \sum_{k=0}^{n} (-1)^{k} \binom{n}{k}
+	\] 
+	times. For $n \geq 1$ this evaluates to $0$ as can be seen by using the binomial expansion
+	\[
+		0 = (1 -1)^{n} = \sum_{k=0}^{n} \binom{n}{k} 1^{n-k} (-1)^{k}
+	.\] 
+	If however $z$ is contained in none of the $C_{i}$ then it is counted once in $S_{0}$. Thus the result follows.
+\end{proof}
+
+As already mentioned the elements of $X$ which lie in no $C_{i}$ are the numbers not divisible by any prime $\leq \left\lfloor \sqrt{x}  \right\rfloor$
+that is the prime numbers between $\left\lfloor \sqrt{x}  \right\rfloor$ and $\left\lfloor x \right\rfloor$.
+We therefore get Legendre's formula as
+\begin{theorem}
+	 \[
+		 \pi(x) = \pi(\sqrt{x} ) + \sum_{k=0}^{K} (-1)^{k} S_{k}
+	.\] 
+\end{theorem}
+
+The following example illustrates this method for $x = 28$:
+\begin{eg}
+	We show the workings of Legendre's method for $x = 28$. The primes smaller equal to $\sqrt{x}$ 
+	are $2,3,5$. Thus the sets  $C_1,C_2,C_3$ are given as below.
+	Notice that no number lies in the intersection of the three sets as $2\cdot 3\cdot 5$ is $> 28$.
+	Now to find the amount of numbers lying outside of $C_1 \cup C_2 \cup C_3$ we subtract
+	their cardinalities from $X$. However as the figure below illustrates the sets
+	$C_1 \cap C_2, C_1 \cap C_3, C_2 \cap C_3$ will be subtracted twice.
+	Thus we have to add their cardinalities to get the desired result. If we express this in the terms given above it is exactly
+	$S_0 - S_1 + S_2$.
+	Carrying out the calculation we find that $\pi(28) = \pi(\sqrt{28}) + S_0 - S_1 + S_2 = 9$
+	\begin{figure}[htpb]
+		\centering
+		\def\svgwidth{0.7\textwidth}
+		\input{Images/legendre.pdf_tex}
+		\caption{Illustration of the sets participating in Legendre's Method.}
+		\label{fig:legendre}
+	\end{figure}
+
+\end{eg}
+
 \section{The Meissel-Lehmer Method}
+\label{sec:meissel-lehmer}
+\todo[inline]{make clearer what is Lehmer / Meissels formula nad explain that all of them are just good orderings of the terms in the legendre forumla}
+In the beginning of this chapter we introduce general notation and formulas for algorithms of Meissel-Lehmer type.
+In the latter sections we then present the different improvements made over time.
 
-\subsection{General Facts}
+\subsection{General Meissel-Lehmer Algorithms}
+In this section we follow the presentations from Lagarias, Miller and Odlyzko in \cite{lagarias85} as well as from Lehmer in \cite{lehmer59}.
 \begin{definition}
-Let us denote the primes $2,3,5,\ldots$ numbered in increasing order by $p_1,p_2,\ldots$.
+Let us denote the primes $2,3,5,\ldots$ numbered in increasing order by $p_1,p_2,p_3,\ldots$.
 
 For $a \geq 1$ let
 \[
@@ -147,7 +265,7 @@ Moreover we define
 \[
 	P_{k}(x,a) = \abs{\left\{n \leq x \mid n = \prod_{j=1}^{k} p_{m_{j}}, m_{j} > a \text{ for } 1 \leq j \leq k\right\} }
 \] 
-that is the $k$th partial sieve function counting the numbers $\leq x$ with exactly $k$ prime factors $\geq p_{a}$.
+that is the $k$-th partial sieve function counting the numbers $\leq x$ with exactly $k$ prime factors $\geq p_{a}$.
 We extend this definition to $P_{0}(x,a) = 1$. Then as $\phi(x,a)$ also counts $1$ we get
 \[
 	\phi(x,a) = \sum_{k=0}^{\infty} P_{k}(x,a)
@@ -158,12 +276,11 @@ Importantly the numbers with only one prime factor are the primes. Thus $P_{1}(x
 	\pi(x) = \phi(x,a) +a - 1 - \sum_{k \geq 2} P_{k}(x,a)  
 .\] 
 \end{definition}
-
 Now if we take $p$ to be the biggest prime smaller equal to $x^{1 / j}$. i.e. $p_{\pi(x^{1 / j})}$.
 Then any $n \leq x$ can have at most $j$ many prime factors bigger than $p$. Thus we conclude that $P_{k}(x,\pi(x^{1 / j})) = 0$ for all $k \geq j$.
 
-We therefore get the following formula:
-For $a = \pi(x^{1 / j})$ it holds that
+
+For $a = \pi(x^{1 / j})$ we then get the formulas of Meissel-Lehmer type:
 \[
 	\pi(x) = \phi(x,a) + a - 1 + \sum_{2 \leq k < j} P_{k}(x,a) 
 .\] 
@@ -172,7 +289,9 @@ A value of $j=2$ for example yields Legendre's Method:
 \[
 	\pi(x) = \phi(x,a) -a +1
 .\]
-A general Method of Meissel Lehmer type can thus be split into multiple parts:
+For $j=3$ we obtain Meissel's original formula which we will analyse in depth in \ref{sec:lagarias}.
+
+A general Method of Meissel-Lehmer type can thus be split into multiple parts:
 In a first step one has to calculate the value of $\phi(x,a)$. For this the following recurrence is essential:
 \begin{lemma}
 	 \[
@@ -181,16 +300,17 @@ In a first step one has to calculate the value of $\phi(x,a)$. For this the foll
 \end{lemma}
 
 \begin{proof}
-	Notice that $z \in \{y \leq x \mid p \mid x \implies p > p_{a}\} $ if and only if
-	$z \in \{y \leq x \mid p \mid x \implies p > p_{a-1}\} $ and $p_{a} \not\mid z$.
-	The first part of this condition is equal to $z \in \phi(x,a-1)$. Full filling the second condition can be reformulated as
-	$z \in \phi(x,a-1) \setminus \{z \mid p_{a} \mid z\} $. This now can easily be seen to be equal to 
-	 $z \in \phi(x,a-1) \setminus \{p_{a} x \mid p \mid x \implies p > p_{a-1}\}$.
-	 which finally is equal to $z \in \phi(x,a-1) \setminus \phi(\frac{x}{p_{a}}, a-1)$. Taking the absolute value yields the desired result.
+	We can rewrite the set $\{y \leq x \mid p \mid x \implies p > p_{a}\}$ whose cardinality equals $\phi(x,a)$ as follows:
+	\begin{align*}
+		\{y \leq x \mid p \mid x \implies p > p_{a}\} &= \{y \leq x \mid p \mid y \implies p > p_{a-1} \text{ and } p_{a} \nmid y\}\\
+		&=  \{y \leq x \mid p \mid y \implies p > p_{a-1}\} \setminus \{p_{a}y \leq x \mid p \mid y \implies p > p_{a-1}\}
+	.\end{align*}
+	Notice that when taking absolutes the sets in the last expression equal $\phi(x,a-1)$ and $\phi(\frac{x}{p_{a}},a-1)$.
+	Thus we obtain the desired result.
 \end{proof}
 
 Through repeated application of this recurrence one can  build a structure similar to a binary tree.
-Each node of the tree is represented by a term $\pm \phi(\frac{x}{n},b$) for some $n$ and $p$. 
+Each node of the tree is represented by a term $\pm \phi(\frac{x}{n},b$) for some $n$ and $b$. 
 Each parent node has two children and the sum of each "level" of the tree
 is equal to $\phi(x,a)$. If some branches are cut early i.e. the recurrence is not applied anymore to that branch, then the sum over all the leaves is equal to $\phi(x,a)$.
 Notice also that every node in the tree can be uniquely described by the tuple $(n,b)$ where $n = \prod_{k=1}^{r} p_{a_{k}}$ with 
@@ -201,29 +321,38 @@ For this different methods of Meissel-Lehmer type use different rules to optimiz
 This part of the calculation is by far the most complex and time consuming. Thus nearly all advancements have been made here.
 
 The second part of the calculation is to find the values of the $P_{k}(x,a)$.
-This is in general way easier then the previous step as simple explicit formulas exist.
-We will show them for $k=2$ and $3$.
+This is in general much simpler than the previous step as simple explicit formulas exist.
+We will show them for $k=2$ and $k=3$.
 
 To calculate $P_2$ we use the following which holds whenever $a \leq \pi(x^{1 / 2})$ :
-\begin{align}
-	P_2(x,a) &= \abs{\{n \mid n \leq x, n = p_{b} p_{c} \text{ with } a < b \leq c\} }\\
+\begin{align*}
+	P_2(x,a) &= \abs{\{n \mid n \leq x, n = p_{b} p_{c} \text{ with } a < j \leq k\} }\\
 			 &=  \sum_{j=a+1}^{\pi(x^{1 / 2})} \abs{\left\{ n \mid n \leq x, n = p_{j} p_{k} \text{ with } j \leq k \leq \pi\left( \frac{x}{p_{j}} \right)  \right\} } \\
 			 &= \sum_{j = a+1}^{\pi(x^{1 / 2})} \left( \pi\left(\frac{x}{p_{j}}\right) -j + 1 \right)  =
 			 \binom{a}{2} - \binom{\pi(x^{1/ 2})}{2} + \sum_{j=a+1}^{\pi(x^{1 / 2})} \pi\left( \frac{x}{p_{j}} \right)
-\end{align}
+\end{align*}
 where the second equality follows as for $n = p_{j} p_{k}$ we have $x \geq n = p_{j} p_{k}$ thus implying $p_{k} \leq \frac{x}{p_{j}}$
 which translates to the inequality for the indices.
-The third inequality follow just from enumerating and the fourth from the Gaussche Summenformel.
+The third inequality follow from enumerating and the fourth from Gauss' summation.
 
 For $P_3$ the following formula follows:
-
+\begin{align*}
+	P_3(x,a) &= \abs{\{n \mid n \leq x, n = p_{j} p_{k} p_{l} \text{ with } a < j \leq k \leq l\} }\\
+			 &=  \sum_{j=a+1}^{\pi(x^{1 / 3})} \abs{\left\{ n \mid n \leq \frac{x}{p_{j}}, n = p_{k} p_{l} \text{ with } j \leq k \leq l \right\} } \\
+			 &= \sum_{j=a+1}^{\pi(x^{1 / 3})} P_2\left(\frac{x}{p_{j}},a\right) 
+			 = \sum_{j = a+1}^{\pi(x^{1 / 3})} \sum_{k = j}^{b_{i}} \left( \pi\left(\frac{x}{p_{j}p_{k}}\right) -k + 1 \right)
+\end{align*}
+with $b_{i} = \pi(\sqrt{x / p_{i}})$.
+The second equality follows as if $p_{j} p_{k} p_{l} \leq x$ and $p_{j} \leq p_{k} \leq p_{l}$
+then clearly $p_{j} \leq x^{1 /3}$ which translates to the inequalities for the indices. Moreover we divided by $p_{j}$.
+The third is just using the definition of $P_2$ and the fourth uses the formula we deduced above for $P_2$.
 
 We are now ready to present and compare different Meissel-Lehmer-Methods.
 
 \subsection{Lehmer's original implementation}
 Lehmer was the first to implement the method on a computer.
 In his method he mostly chose a value of $a = \pi(x^{1 / 3})$ thus $P_{k}(x,a) = 0$ for $k \geq 3$ 
-however some calculations were also carried out for $a = \pi(x^{1 / 4})$ which adds the term of $P_{3}(x,a)$.
+however some calculations were also carried out for $a = \pi(x^{1 / 4})$ which adds the term $P_{3}(x,a)$.
 For the computation of $P_{3}$ he used a short precalculated table of $\pi(y)$ for small values of $y$ which he stored in memory.
 In contrast for $P_2$ no such table is viable as the values of $y$ can get quite big. Thus 
 a modified version of Erastothenes sieve was used whose values where stored on magnetic tape.
@@ -254,41 +383,41 @@ He computed the leaves using the following formulas:
 \end{lemma}
 
 \begin{proof}
-	For the first formula we have:
+	We start by proving the first formula:
 	Let $1 < x \leq y$. Then as $y \leq p_{b}$ the prime factors of $x$ are also smaller than $p_{b}$.
-	Thus no $x$ satisfies $p \mid x \implies p > p_{b}$ for $p$ a prime number. Therefore
+	Thus no $x$ satisfies $p \mid x \implies p > p_{b}$ for a prime number $p$. Therefore
 	$\abs{\{x \leq y \mid p\mid x \implies p_{b}\} } = 1$ as only $1$ is contained in this set.
 	This yields the desired result of $\phi(y,b) = 1$.
 
-	The second formula follows as follows:
+	The prove of the second formula goes as follows:
 	Consider $x \in \N$ such that $Q \lambda \leq x \leq Q (\lambda+1)$. Then we can write $x$ as
 	$Q \lambda + r$ where $r$ is not divisible by $Q$.
-	Now as $Q$ is divisible by $p_{i}$ for $1 \leq i \leq b$ we have that $p_{i} \mid x$ if and only if
+	Observe that as $Q$ is divisible by $p_{i}$ for $1 \leq i \leq b$ we have that $p_{i} \mid x$ if and only if
 	$p_{i}$ divides $r$. 
 
 	Let us write $y = Q \cdot \lambda + r$. Then $\lambda = \left\lfloor \frac{y}{Q} \right\rfloor $ and we can compute the following:
 	\begin{align*}
 		\abs{\{x \leq y \mid p\mid x \implies p > p_{b}\}} &= \sum_{\mu=0}^{\lambda} \abs{\{x \in \N \mid Q\mu \leq x < Q(\mu+1), p \mid x \implies p > p_{b}\}}\\ 
-		&\qquad+ \abs{\{x \in \N \mid Q\mu \leq x \leq r, p \mid x \implies p > p_{b}\}} \\
+		&+ \sum_{\mu = 0}^{\lambda} \abs{\{x \in \N \mid Q\mu \leq x \leq r, p \mid x \implies p > p_{b}\}} \\
 		&= \sum_{\mu = 0}^{\lambda} \abs{\{x < Q \mid p \mid x \implies p > p_{b}\}} + \abs{\{x \leq r \mid p \mid x \implies p > p_{b}\} }\\
 		&=  \lambda \cdot \phi(Q,b) + \phi(r,b)
 	.\end{align*}
 	where in the first equality we just dissected the set and used that the resulting sets are disjoint.
-	In the second equality we used the above showed. And in the final equality we used the definition of $\phi$ as well as that $Q$ is divisible by $p < p_{b}$
+	In the second equality we used the above observation. And in the final equality we used the definition of $\phi$ as well as that $Q$ is divisible by $p < p_{b}$
 	and therefore the strict inequality $x < Q$ can be changed to $x \leq Q$.
 	By now plugging in the values of $\lambda$ and $r$ in dependence of $y$ and $Q$ we get the desired result.
 \end{proof}
 
-For an exact description of the implementation of this truncation rule and calculation the reader can consult [].
+For an exact description of the implementation of this truncation rule and calculation the reader can consult \cite{lehmer59}.
 The big disadvantage of Lehmer's truncation rule is that it is rather space inefficient e.g.
 the calculation of $\phi(10^{10},65)$ lead to more than $3$ million leaves which needed to be calculated.
-Asymptotically the number of nodes in the tree is roughly $\frac{1}{24} a^{4} = \Omega(x / \log^{4}(x))$.
-Lehmer himself states that "this is a good example of how one can substitute time for space with a high-speed computer."
+Asymptotically the number of nodes in the tree of $\phi$ is roughly $\frac{1}{24} a^{4} = \Omega(x / \log^{4}(x))$.
+Lehmer himself states that "this is a good example of how one can substitute time for space with a high-speed computer".
 
-\subsection{The extended Meissel-Lehmer Method}
+\subsection{The extended Meissel-Lehmer Method}\label{sec:lmo}
 This method was developed by Lagarias, Miller and Odlyzko. 
-Its big advantage time and space efficient. To achieve this 
-they chose a value of $a = \pi(x^{1/2)}$ and split the computation of $P_{2}$ into batches of size $x^{2 / 3}$.
+Its big advantage over Lehmer's method is its drastically improved time and space efficiency. To achieve this 
+they chose a value of $a = \pi(x^{1/2})$ and split the computation of $P_{2}$ into batches of size $x^{2 / 3}$.
 The big change however was in the truncation rule they used for calculating $\phi(x,a)$ which significantly reduced the amount of leaves:
 
 \begin{definition}[Truncation rule T]
@@ -302,15 +431,157 @@ The big change however was in the truncation rule they used for calculating $\ph
 The following lemma shows the great reduction in the number of leaves that can be achieved with this new rule:
 
 \begin{lemma}
-	When using truncation rule $T$ to calculate $\phi(x,a)$ with $a = \pi^{1 / 3}$ the resulting binary tree has at most $x^{1 / 3}$ ordinary leaves 
+	When using truncation rule $T$ to calculate $\phi(x,a)$ with $a = \pi(x)^{1 / 3}$ the resulting binary tree has at most $x^{1 / 3}$ ordinary leaves 
 	and at most $x^{2 / 3}$ special leaves.
 \end{lemma}
 
 \begin{proof}
-	from paper
+	We first prove the bound on the ordinary leaves. For this we notice that no two leaves $(n,b)$ have the same value of $n$.
+	As else if $(n,d)$ and $(n,b)$ are two nodes with $d \geq b$. Then there exists a path through the tree
+	given by $(n,d-1), \ldots, (n,b+1), (n,b)$. Thus $(n,d)$ cannot be a leaf and the bound follows as $n \leq x^{1 /3}$.
+
+	To bound the special leaves observe that every special leaf $(n,b)$ has a father node $(n^{*},b+1)$ with
+	$n^{*} = n^{*} p_{b+1}$.
+	Moreover by the definition of the special leaves $n > x^{1 /3} \geq n^{*}$ as $(n^{*},b+1)$ is not a special leaf.
+	We thus have at most $x^{1 /3}$ many choices for $n^{*}$ and maximally $a = \pi(x^{1 / 3}) \leq x^{1/3}$ many choices for $p_{b+1}$.
+	Hence in total there are at most $x^{2 / 3}$ possibilities for $n$ which gives the bound on the special leaves.
 \end{proof}
 
+To compute the contribution of the leaves a partial sieving process is applied to the interval $[1,\left\lfloor x^{2 / 3} \right\rfloor ]$.
+This is done on successive subintervals of length $x^{1 / 3}$ to reduce space usage.
+An indepth description of the precise algorithm  can be found in \cite{lagarias85}.
+There it is shown that the algorithm has the following complexity:
+\begin{theorem}
+	The extended Meissel-Lehmer Method can be implemented to calculate $\pi(x)$ using at most $O(x^{2 /3 + \epsilon})$ arithmetic
+	operations and using at most $O(x^{1 / 3 + \epsilon})$ storage locations on a RAM.
+	All integers stored during the computation are of length at most $\left\lfloor \log_2(x)  \right\rfloor + 1$ bits.
+\end{theorem}
+
+\begin{remark}
+	Lagarias Miller and Odlyzko also presented an algorithm that works on $M$ parallel processors for $M < x^{1 /3}$ and reduces the
+	arithmetic operations per processor to $O(M^{-1} x^{2 / 3 + \epsilon})$ while using $O(x^{1 /3 + \epsilon})$ storage locations per processor.
+\end{remark}
+
+\subsection{Further improvements}
+In 1994 Deléglise and Rivat improved on the previous method.
+They kept practically the same algorithm for calculating $P_2$ and used the same truncation rule as Lagarias Miller and Odlyzko.
+However, they significantly improved the implementation of the latter
+through grouping together the leaves more efficiently and splitting the calculation of the most
+complicated parts into smaller subproblems which is summarized by the following theorem:
+\begin{theorem}
+	The algorithm descibed by Deléglise and Rivat takes $O(x^{1 / 3} \log^3(x) \log \log(x))$ space
+	and has a time complexity of $O(\frac{x^{2 / 3}}{\log_2(x)})$.
+\end{theorem}
+With their new algorithm they managed to compute $\pi(x)$ up to $x = 10^{18}$.
+
+Finally in 2001 Xavier Gourdon presented further improvements. Through optimizing the calculation
+of the subproblems used by Deléglise and Rivat he managed to reduce some of the constant factors as well as
+reducing the space complexity to $O((x / y)^{1 / 2})$ instead of the $O(y)$ achieved by the former
+where $y = x^{1 / 3} \log^3(x) \log \log(x)$.
+Arguably his most important contribution was that he managed to improve Lagarias Miller and Odlyzko's 
+parallel algorithm significantly. Through his advancements only a small exchange of memory between the processes is needed
+after doing a relatiely cheap precomputation.
+This allows for efficient distributed calculations.
+
+\newpage
+\section{Final remarks}
+In this section we present the different asymptotic complexities of the methods described as well as present some computational results.
+
+In Table \ref{tab:runtime} the time as well as space complexity of the discussed methods is shown and proofs for
+these can be found in the respective papers.
+\begin{table}[htpb]
+	\centering
+	\label{tab:runtime}
+	\begin{tabular}{|c|c|c|}
+		\hline
+		Method & Time & Space\\ \hline
+		Eratosthenes & $O(x \log \log x)$ & $O(x)$ \\
+		Legendre &  $O(x)$ &  $O(x^{1 / 2})$ \\
+		Lehmer & $O(x / \log^{4} x)$ & $O(x^{1 / 3} / \log x)$\\
+		Lagarias-Miller-Odlyzko & $O(x^{2 /3 + \epsilon})$ & $O(x^{1 /3 + \epsilon})$ \\
+		Deléglise-Rivat & $O(x^{2 /3} / \log^2 x)$ & $O(x^{1 / 3} \log^3 x \log \log x)$\\
+		Lagarias-Odlyzko & $O(x^{1 /2 + \epsilon})$ & $O(x^{1 / 4 + \epsilon})$ \\\hline
+	\end{tabular}
+	\caption{Comparison of the asymptotic complexities}
+\end{table}
+
+The method mentioned in the last row has been described by Lagarias and Odklyzko in 1987 in [] and uses a completely different approach to
+the other versions. Here numerical integration of specific integral transforms of the Riemann $\zeta$-function are being used to compute $ \pi(x)$
+Even though this method has superior asymptotic complexity it is not used in practical applications as the implied constants are likely very large
+and therefore not really competitive with the different methods.
+
+In the Appendix an implementation in python of the four described methods can be found. One should note however
+that these are quiet slow due to their implementation in python and not in a fast language as C++.
+Therefore for practical calculations Kim Walish's primecount should be used. Nonetheless the implementation
+illustrates well the different workings of the methods and follows as close as possible the 
+original descriptions of the different authors.
+
+We conclude with Table \ref{tab:computations} which displays the results of $\pi(x)$ as well as the functions $P_2(x,a)$ and $\phi(x,a)$ 
+for the different powers of $10$ and for $a = \pi(x^{1 / 3}$.
+
+\begin{table}[htpb]
+	\centering
+	\label{tab:computations}
+	\begin{tabular}{|c|r|r|r|}
+		\hline
+		$x$ & $P_2(x,a)$ & $\phi(x,a)$ & $\pi(x)$\\ \hline
+        $10$ & 1 & 5 & 4\\
+        $10^2$ & 9 & 33 & 25\\
+        $10^3$ & 63 & 228 & 168\\
+        $10^4$ & 489 & 1711 & 1229\\
+        $10^5$ & 4625 & 14204 & 9592\\
+        $10^6$ & 42286 & 120760 & 78498\\
+        $10^7$ & 374867 & 1039400 & 664579\\
+        $10^8$ & 3349453 & 9110819 & 5761455\\
+		$10^{9}$ & 30667735 & 81515102 & 50847534\\
+		$10^{10}$ & 279167372 & 734219559 & 455052511\\
+        $10^{11}$ & 2571194450 & 6689248638 & 4118054813\\
+        $10^{12}$ & 23729370364 & 61337281154 & 37607912018\\
+        $10^{13}$ & 566584397965 & 220518863542 & 346065536839\\ \hline
+        
+	\end{tabular}
+	\caption{Values of $\pi(x)$}
+\end{table}
+
+
+\newpage
+\printbibliography
+\newpage
+\appendix
+\section{Python implementation}
+To run the ensuing code python 3 as well as the package numpy is needed.
+The code consists of five files and can also be found on github under: \url{github.com/jlportner/CompProject/tree/main/PrimeCounting}.
+
+In \texttt{eratosthenes.py} a version of Eratosthenes sieve is implemented. This file is also necessary to run the other methods.
+In \texttt{legendre.py} Legendres Method has been implemented. 
+The file \texttt{lehmer.py} contains an implementation of Lehmer's Method. Here one can choose
+between using $a = \pi(x^{1 /2})$ or $a = \pi(x^{1 /3})$ by calling the method with the flag \texttt{alt=True}
+which allows to test both ways that Lehmer used.
+In the file \texttt{lmo.py} the extended Meissel-Lehmer method from Lagarias, Miller and Odlyzko has been implemented. 
+here one can either call \texttt{lmoMethod} to calculate $\pi(x)$ or one can also 
+just compute $P_2, S_1$ or $S_2$ as described in section \ref{sec:lmo} by calling the respective methods.
+Finally, in \texttt{main.py} a small working example which asks for an integer $x$ and then computes $\pi(x)$ with all the different aformentioned methods 
+has been implemented. This also measures the time each method took and prints it out.
+
+\subsection{main.py}
+\lstinputlisting[language=Python]{./PrimeCounting/main.py}
+\subsection{eratosthenes.py}
+\lstinputlisting[language=Python]{./PrimeCounting/eratosthenes.py}
+\subsection{legendre.py}
+\lstinputlisting[language=Python]{./PrimeCounting/legendre.py}
+\subsection{lehmer.py}
+\lstinputlisting[language=Python]{./PrimeCounting/lehmer.py}
+\subsection{lmo.py}
+\lstinputlisting[language=Python]{./PrimeCounting/lmo.py}
 \end{document}
+
+
+
+
+
+
+
+
 
 
 
@@ -347,3 +618,10 @@ The following lemma shows the great reduction in the number of leaves that can b
 %$O(x^{2/ 3 + \epsilon})$.
 
 %The question that remains is how to calculate the leaves efficiently under this new truncation rule.
+%We conclude with a short side by side comparison. For this we use the benchmark results
+%obtained from Kim Walisch by using the different methods implementations in primecount.
+%The results are shown in the table below.
+%
+%Mention analytic method.
+%Do something with prime count / show tables of values etc.
+%Show table of different runtimes part is in S 17 57.
