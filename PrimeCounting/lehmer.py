@@ -5,12 +5,6 @@ def preCalcPhi(n, a,P=None):
     if P is None:
         P = eratosthenesSieve(n).tolist()
 
-    def preCalcRec(x,k):
-        if k <= 0:
-            return int(x)
-        else:
-            return preCalcRec(x, k - 1) - preCalcRec(x / P[k-1], k - 1)
-
     preCalc = np.vstack((np.arange(n+1),np.zeros((a,n+1))))
     for i in range(1,a+1):
         preCalc[i] = preCalc[i-1] - preCalc[i-1][(np.arange(n+1) / P[i-1]).astype("int")]
